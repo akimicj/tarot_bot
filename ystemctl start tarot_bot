@@ -1,0 +1,17 @@
+○ tarot_bot.service - Tarot Telegram Bot
+     Loaded: loaded (/etc/systemd/system/tarot_bot.service; enabled; vendor preset: enabled)
+     Active: inactive (dead) since Sat 2026-04-18 22:09:59 UTC; 4s ago
+    Process: 2680 ExecStart=/root/tarot_bot/venv/bin/python3 /root/tarot_bot/main.py (code=exited, status=0/SUCCESS)
+   Main PID: 2680 (code=exited, status=0/SUCCESS)
+        CPU: 2.335s
+
+Apr 18 22:09:55 zinchen.com python3[2680]:   File "/root/tarot_bot/venv/lib/python3.10/site-packages/aiosqlite/core.py", line 63, in _connection_worker_thread
+Apr 18 22:09:55 zinchen.com python3[2680]:     result = function()
+Apr 18 22:09:55 zinchen.com python3[2680]: sqlite3.OperationalError: no such column: notify_enabled
+Apr 18 22:09:59 zinchen.com systemd[1]: Stopping Tarot Telegram Bot...
+Apr 18 22:09:59 zinchen.com python3[2680]: WARNING:aiogram.dispatcher:Received SIGTERM signal
+Apr 18 22:09:59 zinchen.com python3[2680]: INFO:aiogram.dispatcher:Polling stopped for bot @TarologiiyaAIbot id=8769327306 - 'ТарологИИя'
+Apr 18 22:09:59 zinchen.com python3[2680]: INFO:aiogram.dispatcher:Polling stopped
+Apr 18 22:09:59 zinchen.com systemd[1]: tarot_bot.service: Deactivated successfully.
+Apr 18 22:09:59 zinchen.com systemd[1]: Stopped Tarot Telegram Bot.
+Apr 18 22:09:59 zinchen.com systemd[1]: tarot_bot.service: Consumed 2.335s CPU time.

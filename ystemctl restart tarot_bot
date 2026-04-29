@@ -1,0 +1,20 @@
+[0;1;32m●[0m tarot_bot.service - Tarot Telegram Bot
+     Loaded: loaded (/etc/systemd/system/tarot_bot.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Sat 2026-04-18 21:40:09 UTC; 44s ago
+   Main PID: 2118 (python3)
+      Tasks: 2 (limit: 2216)
+     Memory: 96.6M
+        CPU: 1.954s
+     CGroup: /system.slice/tarot_bot.service
+             └─2118 /root/tarot_bot/venv/bin/python3 /root/tarot_bot/main.py
+
+Apr 18 21:40:19 zinchen.com python3[2118]:     return await bot(self)
+Apr 18 21:40:19 zinchen.com python3[2118]:   File "/root/tarot_bot/venv/lib/python3.10/site-packages/aiogram/client/bot.py", line 493, in __call__
+Apr 18 21:40:19 zinchen.com python3[2118]:     return await self.session(self, method, timeout=request_timeout)
+Apr 18 21:40:19 zinchen.com python3[2118]:   File "/root/tarot_bot/venv/lib/python3.10/site-packages/aiogram/client/session/base.py", line 259, in __call__
+Apr 18 21:40:19 zinchen.com python3[2118]:     return cast(TelegramType, await middleware(bot, method))
+Apr 18 21:40:19 zinchen.com python3[2118]:   File "/root/tarot_bot/venv/lib/python3.10/site-packages/aiogram/client/session/aiohttp.py", line 177, in make_request
+Apr 18 21:40:19 zinchen.com python3[2118]:     response = self.check_response(
+Apr 18 21:40:19 zinchen.com python3[2118]:   File "/root/tarot_bot/venv/lib/python3.10/site-packages/aiogram/client/session/base.py", line 121, in check_response
+Apr 18 21:40:19 zinchen.com python3[2118]:     raise TelegramBadRequest(method=method, message=description)
+Apr 18 21:40:19 zinchen.com python3[2118]: aiogram.exceptions.TelegramBadRequest: Telegram server says - Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message
