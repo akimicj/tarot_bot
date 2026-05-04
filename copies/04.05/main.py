@@ -67,9 +67,6 @@ from horoscope import (
     zodiac_sign,
 )
 
-# Новый модуль генерации матрицы судьбы (октаграмма Фадеева)
-from matrix_image import build_matrix_image
-
 BOT_TOKEN = "8539615509:AAGmG2Nimijudxe_sZAW__84hXkpEuCndhk"
 ADMIN_ID = 982023162
 DEFAULT_TIMEZONE = "Europe/Moscow"
@@ -834,6 +831,8 @@ def match_prompt_keyboard() -> InlineKeyboardMarkup:
     )
 
 
+
+
 def matrix_access_active(user) -> bool:
     return bool(user and int(user["matrix_access"] or 0) == 1)
 
@@ -892,9 +891,113 @@ def format_matrix_buy_prompt(user) -> str:
 """
 
 
-# ---------------------------
-# Matrix send helper
-# ---------------------------
+def format_matrix_full(user) -> str:
+    if not user or not user["birth_date"]:
+        return "Сначала заполни дату рождения."
+
+    matrix = matrix_of_destiny(user["birth_date"])
+    labels = matrix["labels"]
+    meanings = matrix["meanings"]
+
+    grid_text = f"""
+<pre>┌──────────────┬──────────────┬──────────────┐
+│ {labels['day']:<12} │ {labels['month']:<12} │ {labels['year']:<12} │
+│ {meanings['day']:<12} │ {meanings['month']:<12} │ {meanings['year']:<12} │
+├──────────────┼──────────────┼──────────────┤
+│ {labels['money']:<12} │ {labels['personal']:<12} │ {labels['love']:<12} │
+│ {meanings['money']:<12} │ {meanings['personal']:<12} │ {meanings['love']:<12} │
+├──────────────┼──────────────┼──────────────┤
+│ {labels['talent']:<12} │ {labels['karma']:<12} │ {labels['result']:<12} │
+│ {meanings['talent']:<12} │ {meanings['karma']:<12} │ {meanings['result']:<12} │
+└──────────────┴──────────────┴──────────────┘</pre>
+"""
+
+    return f"""
+<b>🧮 Матрица судьбы</b>
+
+<b>Дата рождения:</b> {pretty_date(user['birth_date'])}
+<b>Личный аркан:</b> {e(matrix['labels']['personal'])}
+<b>Личное ядро:</b> {e(matrix['labels']['result'])}
+
+{grid_text}
+
+<b>Ключевые каналы</b>
+• <b>Деньги:</b> {e(matrix['labels']['money'])} — {e(meanings['money'])}
+• <b>Отношения:</b> {e(matrix['labels']['love'])} — {e(meanings['love'])}
+• <b>Таланты:</b> {e(matrix['labels']['talent'])} — {e(meanings['talent'])}
+• <b>Карма:</b> {e(matrix['labels']['karma'])} — {e(meanings['karma'])}
+
+<b>Полезно смотреть</b>
+• как включается энергия в отношениях
+• где проще зарабатывать
+• какой урок повторяется чаще всего
+• где лучше действовать, а не ждать
+"""
+
+
+def build_matrix_image(user) -> str | None:
+    if not user or not user["birth_date"]:
+        return None
+
+    try:
+        from PIL import Image, ImageDraw, ImageFont
+    except Exception:
+        return None
+
+    matrix = matrix_of_destiny(user["birth_date"])
+    labels = matrix["labels"]
+    meanings = matrix["meanings"]
+    order = ["day", "month", "year", "money", "personal", "love", "talent", "karma", "result"]
+
+    size = 1200
+    img = Image.new("RGB", (size, size), "white")
+    draw = ImageDraw.Draw(img)
+
+    def get_font(size_px: int, bold: bool = False):
+        candidates = [
+            "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+            "/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation2/LiberationSans-Regular.ttf",
+        ]
+        for path in candidates:
+            if os.path.exists(path):
+                try:
+                    return ImageFont.truetype(path, size_px)
+                except Exception:
+                    pass
+        return ImageFont.load_default()
+
+    title_font = get_font(40, True)
+    subtitle_font = get_font(24, False)
+    cell_num_font = get_font(30, True)
+    cell_text_font = get_font(18, False)
+
+    draw.text((60, 35), "Матрица судьбы", fill="black", font=title_font)
+    draw.text((60, 85), f"{user['name']}  •  {pretty_date(user['birth_date'])}", fill="black", font=subtitle_font)
+
+    left = 80
+    top = 160
+    cell = 300
+    for idx, key in enumerate(order):
+        r = idx // 3
+        c = idx % 3
+        x0 = left + c * cell
+        y0 = top + r * cell
+        x1 = x0 + cell - 20
+        y1 = y0 + cell - 20
+        draw.rounded_rectangle((x0, y0, x1, y1), radius=26, outline="black", width=4)
+        draw.text((x0 + 20, y0 + 20), labels[key], fill="black", font=cell_num_font)
+        draw.text((x0 + 20, y0 + 75), meanings[key], fill="black", font=cell_text_font)
+
+    footer_y = 1040
+    draw.text((60, footer_y), f"Личный аркан: {labels['personal']}", fill="black", font=subtitle_font)
+    draw.text((60, footer_y + 35), f"Ядро матрицы: {labels['result']}", fill="black", font=subtitle_font)
+
+    out_dir = Path(tempfile.gettempdir())
+    path = out_dir / f"matrix_{user['telegram_id']}.png"
+    img.save(path)
+    return str(path)
+
+
 
 async def send_matrix_menu(target: Message | CallbackQuery, state: FSMContext | None = None) -> None:
     if state:
@@ -913,34 +1016,27 @@ async def send_matrix_menu(target: Message | CallbackQuery, state: FSMContext | 
         return
 
     if matrix_access_active(user):
-        # Генерируем красивую картинку
         image_path = build_matrix_image(user)
-        caption = (
-            f"<b>🧮 Матрица судьбы</b>\n"
-            f"<b>{e(user.get('name', ''))}</b> • {pretty_date(user['birth_date'])}\n\n"
-            f"Твоя персональная карта по методу Натальи Ладини.\n"
-            f"Числа рассчитаны на основе даты рождения."
-        )
         if image_path:
             try:
                 if isinstance(target, CallbackQuery):
                     await target.message.answer_photo(
                         FSInputFile(image_path),
-                        caption=caption,
+                        caption="<b>Матрица судьбы открыта</b>",
                         reply_markup=matrix_menu_keyboard(user),
                     )
                 else:
                     await target.answer_photo(
                         FSInputFile(image_path),
-                        caption=caption,
+                        caption="<b>Матрица судьбы открыта</b>",
                         reply_markup=matrix_menu_keyboard(user),
                     )
+                await render(target, format_matrix_full(user), matrix_menu_keyboard(user))
                 return
-            except Exception as err:
-                logging.exception("Ошибка отправки картинки матрицы: %s", err)
+            except Exception:
+                pass
 
-        # Fallback — текст если картинка не вышла
-        await render(target, caption, matrix_menu_keyboard(user))
+        await render(target, format_matrix_full(user), matrix_menu_keyboard(user))
         return
 
     await render(target, format_matrix_preview(user), matrix_menu_keyboard(user))
@@ -948,6 +1044,7 @@ async def send_matrix_menu(target: Message | CallbackQuery, state: FSMContext | 
 
 # ---------------------------
 # Admin helpers
+
 # ---------------------------
 
 async def send_admin_panel(target: Message | CallbackQuery, state: FSMContext | None = None) -> None:
@@ -1351,6 +1448,7 @@ async def schedule_minute(callback: CallbackQuery, state: FSMContext):
     )
 
 
+
 @router.callback_query(F.data == "schedule:disable_prompt")
 async def schedule_disable_prompt(callback: CallbackQuery):
     await callback.answer()
@@ -1584,9 +1682,6 @@ async def reading_full_pay(callback: CallbackQuery):
     )
 
 
-# ---------------------------
-# Matrix callbacks
-# ---------------------------
 
 @router.callback_query(F.data == "matrix:buy_prompt")
 async def matrix_buy_prompt(callback: CallbackQuery):
